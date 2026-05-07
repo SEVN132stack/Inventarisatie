@@ -33,10 +33,11 @@ export default async function ProductenPage() {
               <th style={{ textAlign: 'right' }}>Verkoop</th>
               <th style={{ textAlign: 'center' }}>Voorraad</th>
               <th>Status</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            {producten.map((p: typeof producten[number]) => {
+            {producten.map((p) => {
               const laag = p.voorraadAantal <= p.minVoorraad
               const marge = ((Number(p.verkoopprijs) - Number(p.inkoopprijs)) / Number(p.verkoopprijs) * 100).toFixed(0)
               return (
@@ -45,28 +46,21 @@ export default async function ProductenPage() {
                     <div style={{ fontWeight: 500, fontSize: 13 }}>{p.naam}</div>
                     {p.leverancier && <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{p.leverancier.naam}</div>}
                   </td>
-                  <td>
-                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--text-muted)' }}>{p.sku}</span>
-                  </td>
-                  <td>
-                    <span className="badge badge-purple">{p.categorie.naam}</span>
-                  </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: 12 }}>
-                    {formatEuro(p.inkoopprijs)}
-                  </td>
+                  <td><span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--text-muted)' }}>{p.sku}</span></td>
+                  <td><span className="badge badge-purple">{p.categorie.naam}</span></td>
+                  <td style={{ textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: 12 }}>{formatEuro(p.inkoopprijs)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>{formatEuro(p.verkoopprijs)}</div>
                     <div style={{ fontSize: 10, color: 'var(--green)', fontFamily: 'DM Mono, monospace' }}>{marge}% marge</div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <span className={`badge ${laag ? 'badge-amber' : 'badge-green'}`}>
-                      {p.voorraadAantal} {p.eenheid}
-                    </span>
+                    <span className={`badge ${laag ? 'badge-amber' : 'badge-green'}`}>{p.voorraadAantal} {p.eenheid}</span>
                   </td>
-                  <td>
-                    {laag
-                      ? <span className="badge badge-amber">⚠ Laag</span>
-                      : <span className="badge badge-green">✓ OK</span>}
+                  <td>{laag ? <span className="badge badge-amber">⚠ Laag</span> : <span className="badge badge-green">✓ OK</span>}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <Link href={`/producten/${p.id}/bewerken`}>
+                      <button className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 12 }}>✎ Bewerk</button>
+                    </Link>
                   </td>
                 </tr>
               )

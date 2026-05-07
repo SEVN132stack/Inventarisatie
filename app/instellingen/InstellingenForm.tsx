@@ -13,6 +13,8 @@ export default function InstellingenForm({ emailInstellingen }: { emailInstellin
   const [email, setEmail] = useState('')
   const [naam, setNaam] = useState('')
   const [dag, setDag] = useState(1)
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   async function voegToe() {
     if (!email) return
@@ -26,25 +28,81 @@ export default function InstellingenForm({ emailInstellingen }: { emailInstellin
     if (res.ok) { setSuccess(true); setEmail(''); setNaam(''); router.refresh() }
   }
 
+  async function toggleActief(id: string, huidigActief: boolean) {
+    setToggling(id)
+    await fetch(`/api/instellingen/email/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actief: !huidigActief }),
+    })
+    setToggling(null)
+    router.refresh()
+  }
+
+  async function verwijder(id: string) {
+    setDeleting(id)
+    await fetch(`/api/instellingen/email/${id}`, { method: 'DELETE' })
+    setDeleting(null)
+    router.refresh()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Bestaande ontvangers */}
+      {/* Ontvangers lijst met checkboxes */}
       <div className="card">
-        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', marginBottom: 16 }}>
-          E-mail ontvangers
+        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', marginBottom: 6 }}>
+          Maandelijkse rapportage ontvangers
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+          Vink aan wie de automatische maandrapportage ontvangt.
         </div>
 
-        {emailInstellingen.length === 0
-          ? <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>Nog geen ontvangers toegevoegd.</div>
-          : emailInstellingen.map(e => (
-              <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg3)', borderRadius: 8, marginBottom: 8, border: '1px solid var(--border)' }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{e.ontvangerNaam ?? e.ontvangerEmail}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{e.ontvangerEmail} · Verzenden op dag {e.verzendDag}</div>
-                </div>
-                <span className={`badge ${e.actief ? 'badge-green' : 'badge-red'}`}>{e.actief ? 'Actief' : 'Inactief'}</span>
+        {emailInstellingen.length === 0 ? (
+          <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: '12px 0' }}>Nog geen ontvangers. Voeg er hieronder een toe.</div>
+        ) : emailInstellingen.map(e => (
+          <div key={e.id} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 14px', background: 'var(--bg3)',
+            borderRadius: 8, marginBottom: 8,
+            border: `1px solid ${e.actief ? 'var(--accent-dim)' : 'var(--border)'}`,
+            opacity: toggling === e.id ? 0.6 : 1,
+            transition: 'all 0.15s',
+          }}>
+            {/* Checkbox */}
+            <input
+              type="checkbox"
+              checked={e.actief}
+              onChange={() => toggleActief(e.id, e.actief)}
+              disabled={toggling === e.id}
+              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--accent)' }}
+            />
+
+            {/* Info */}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: e.actief ? 'var(--text)' : 'var(--text-muted)' }}>
+                {e.ontvangerNaam ?? e.ontvangerEmail}
               </div>
-            ))}
+              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                {e.ontvangerNaam ? e.ontvangerEmail + ' · ' : ''}dag {e.verzendDag} van de maand
+              </div>
+            </div>
+
+            {/* Status badge */}
+            <span className={`badge ${e.actief ? 'badge-green' : 'badge-red'}`}>
+              {e.actief ? '✓ Actief' : '✕ Inactief'}
+            </span>
+
+            {/* Verwijder */}
+            <button
+              className="btn btn-ghost"
+              style={{ padding: '3px 8px', fontSize: 11, color: 'var(--red)' }}
+              onClick={() => verwijder(e.id)}
+              disabled={deleting === e.id}
+            >
+              {deleting === e.id ? '...' : '✕'}
+            </button>
+          </div>
+        ))}
       </div>
 
       {/* Nieuwe ontvanger */}
@@ -74,14 +132,13 @@ export default function InstellingenForm({ emailInstellingen }: { emailInstellin
         </div>
       </div>
 
-      {/* Environment info */}
+      {/* Env variabelen info */}
       <div className="card" style={{ borderColor: 'var(--accent-dim)' }}>
         <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', marginBottom: 12 }}>
           Vereiste omgevingsvariabelen
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
-            { key: 'DATABASE_URL', desc: 'PostgreSQL connectiestring' },
             { key: 'BREVO_API_KEY', desc: 'API sleutel van app.brevo.com' },
             { key: 'EMAIL_FROM', desc: 'Afzenderadres (bijv. noreply@winkel.nl)' },
             { key: 'EMAIL_NAAM', desc: 'Afzendernaam (bijv. WinkelPro)' },

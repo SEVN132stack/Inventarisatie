@@ -2,6 +2,11 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 
+export async function GET() {
+  const instellingen = await prisma.emailInstelling.findMany({ orderBy: { aangemaaktOp: 'asc' } })
+  return NextResponse.json(instellingen)
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -14,7 +19,7 @@ export async function POST(req: NextRequest) {
       create: { ontvangerEmail, ontvangerNaam, verzendDag: parseInt(verzendDag ?? '1') },
     })
     return NextResponse.json(instelling, { status: 201 })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })
   }
 }
