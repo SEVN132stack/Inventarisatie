@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0d0f12;
+  --bg2: #13161b;
+  --bg3: #1a1d24;
+  --border: #252830;
+  --border-bright: #353a45;
+  --text: #e8eaf0;
+  --text-muted: #7a7f8e;
+  --text-dim: #454b5a;
+  --accent: #4f8ef7;
+  --accent-dim: #1e3a6e;
+  --green: #34d399;
+  --green-dim: #0d3326;
+  --amber: #fbbf24;
+  --amber-dim: #3d2a00;
+  --red: #f87171;
+  --red-dim: #3d1010;
+  --purple: #a78bfa;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+/* Mono for numbers */
+.mono { font-family: 'DM Mono', monospace; }
+
+/* Cards */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* Table */
+.tabel {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tabel th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.tabel td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.tabel tr:last-child td { border-bottom: none; }
+.tabel tr:hover td { background: var(--bg3); }
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'DM Mono', monospace;
+}
+.badge-green  { background: var(--green-dim);  color: var(--green); }
+.badge-red    { background: var(--red-dim);    color: var(--red); }
+.badge-amber  { background: var(--amber-dim);  color: var(--amber); }
+.badge-blue   { background: var(--accent-dim); color: var(--accent); }
+.badge-purple { background: #2d1f5e;           color: var(--purple); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Syne', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #6ba3f9; }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--bg3); color: var(--text); border-color: var(--border-bright); }
+.btn-danger {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid #5a1a1a;
+}
+.btn-danger:hover { background: #5a1a1a; }
+
+/* Inputs */
+.input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: 'Syne', sans-serif;
+  width: 100%;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--text-dim); }
+
+select.input option { background: var(--bg3); }
+
+label.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+/* Stat pill */
+.stat-delta-pos { color: var(--green); font-size: 11px; font-family: 'DM Mono', monospace; }
+.stat-delta-neg { color: var(--red);   font-size: 11px; font-family: 'DM Mono', monospace; }
+
+/* Alert */
+.alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.alert-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid #5a3d00; }
+.alert-red   { background: var(--red-dim);   color: var(--red);   border: 1px solid #5a1a1a; }
+.alert-green { background: var(--green-dim); color: var(--green); border: 1px solid #0d4a30; }

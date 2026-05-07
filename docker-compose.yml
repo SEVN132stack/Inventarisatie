@@ -1,0 +1,77 @@
+version: '3.9'
+
+services:
+  # PostgreSQL database
+  db:
+    image: postgres:16-alpine
+    container_name: inventarisatie_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: inventarisatie
+      POSTGRES_PASSWORD: geheim
+      POSTGRES_DB: inventarisatie
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventarisatie"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Databasemigraties + seed (eenmalig bij opstarten)
+  migrate:
+    build: .
+    container_name: inventarisatie_migrate
+    environment:
+      DATABASE_URL: postgresql://inventarisatie:geheim@db:5432/inventarisatie?schema=public
+    command: sh -c "npx prisma migrate deploy && node prisma/seed.js"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # Next.js applicatie
+  app:
+    build: .
+    container_name: inventarisatie_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://inventarisatie:geheim@db:5432/inventarisatie?schema=public
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@winkel.nl}
+      EMAIL_NAAM: ${EMAIL_NAAM:-WinkelPro}
+      NODE_ENV: production
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+
+  # Cron: stuur maandelijks rapport op de 1e van de maand
+  cron:
+    image: alpine:3.19
+    container_name: inventarisatie_cron
+    restart: unless-stopped
+    environment:
+      APP_URL: http://app:3000
+    command: >
+      sh -c "
+        echo '0 8 1 * * wget -qO- --header=\"Content-Type: application/json\"
+          --post-data={\"type\":\"MAANDELIJKS\",\"stuurMail\":true}
+          \$${APP_URL}/api/rapportages > /dev/null 2>&1' | crontab - &&
+        crond -f -l 2
+      "
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: inventarisatie_net

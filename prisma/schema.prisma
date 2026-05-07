@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GebruikerRol {
+  ADMIN
+  MEDEWERKER
+}
+
+model Gebruiker {
+  id           String       @id @default(uuid())
+  naam         String
+  email        String       @unique
+  rol          GebruikerRol @default(MEDEWERKER)
+  aangemaaktOp DateTime     @default(now())
+  bijgewerktOp DateTime     @updatedAt
+  verkopen     Verkoop[]
+  mutaties     VoorraadMutatie[]
+  rapportages  Rapportage[]
+
+  @@map("gebruikers")
+}
+
+model Categorie {
+  id           String    @id @default(uuid())
+  naam         String    @unique
+  omschrijving String?
+  aangemaaktOp DateTime  @default(now())
+  producten    Product[]
+
+  @@map("categorieen")
+}
+
+model Leverancier {
+  id             String    @id @default(uuid())
+  naam           String
+  contactpersoon String?
+  email          String?
+  telefoon       String?
+  aangemaaktOp   DateTime  @default(now())
+  bijgewerktOp   DateTime  @updatedAt
+  producten      Product[]
+
+  @@map("leveranciers")
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  categorieId    String
+  leverancierId  String?
+  naam           String
+  sku            String    @unique
+  omschrijving   String?
+  inkoopprijs    Decimal   @db.Decimal(10, 2)
+  verkoopprijs   Decimal   @db.Decimal(10, 2)
+  btw            Decimal   @default(21) @db.Decimal(5, 2)
+  voorraadAantal Int       @default(0)
+  minVoorraad    Int       @default(5)
+  eenheid        String    @default("stuk")
+  actief         Boolean   @default(true)
+  aangemaaktOp   DateTime  @default(now())
+  bijgewerktOp   DateTime  @updatedAt
+
+  categorie      Categorie     @relation(fields: [categorieId], references: [id])
+  leverancier    Leverancier?  @relation(fields: [leverancierId], references: [id])
+  verkoopRegels  VerkoopRegel[]
+  mutaties       VoorraadMutatie[]
+
+  @@index([categorieId])
+  @@index([actief])
+  @@map("producten")
+}
+
+enum BetalingsMethode {
+  CONTANT
+  PIN
+  FACTUUR
+  ONLINE
+}
+
+model Verkoop {
+  id               String           @id @default(uuid())
+  gebruikerId      String
+  betalingsMethode BetalingsMethode @default(PIN)
+  totaalBedrag     Decimal          @db.Decimal(10, 2)
+  kortingBedrag    Decimal          @default(0) @db.Decimal(10, 2)
+  notitie          String?
+  verkochtenOp     DateTime         @default(now())
+  bijgewerktOp     DateTime         @updatedAt
+
+  gebruiker        Gebruiker        @relation(fields: [gebruikerId], references: [id])
+  regels           VerkoopRegel[]
+
+  @@index([gebruikerId])
+  @@index([verkochtenOp])
+  @@map("verkopen")
+}
+
+model VerkoopRegel {
+  id            String   @id @default(uuid())
+  verkoopId     String
+  productId     String
+  aantal        Int
+  eenheidsprijs Decimal  @db.Decimal(10, 2)
+  btw           Decimal  @db.Decimal(5, 2)
+  subtotaal     Decimal  @db.Decimal(10, 2)
+  korting       Decimal  @default(0) @db.Decimal(10, 2)
+
+  verkoop       Verkoop  @relation(fields: [verkoopId], references: [id], onDelete: Cascade)
+  product       Product  @relation(fields: [productId], references: [id])
+
+  @@index([verkoopId])
+  @@index([productId])
+  @@map("verkoop_regels")
+}
+
+enum MutatieReden {
+  VERKOOP
+  AANVULLING
+  CORRECTIE
+  RETOUR
+  AFSCHRIJVING
+  INVENTARISATIE
+}
+
+model VoorraadMutatie {
+  id            String       @id @default(uuid())
+  productId     String
+  gebruikerId   String
+  delta         Int
+  redenType     MutatieReden
+  notitie       String?
+  verkoopId     String?
+  gemuteerddOp  DateTime     @default(now())
+
+  product       Product      @relation(fields: [productId], references: [id])
+  gebruiker     Gebruiker    @relation(fields: [gebruikerId], references: [id])
+
+  @@index([productId])
+  @@index([gemuteerddOp])
+  @@map("voorraad_mutaties")
+}
+
+enum RapportageType {
+  MAANDELIJKS
+  KWARTAAL
+  JAARLIJKS
+  HANDMATIG
+}
+
+enum RapportageStatus {
+  IN_WACHTRIJ
+  GENEREREN
+  GEREED
+  MISLUKT
+}
+
+model Rapportage {
+  id                String           @id @default(uuid())
+  gegenereerddoorId String
+  type              RapportageType
+  status            RapportageStatus @default(IN_WACHTRIJ)
+  periodeStart      DateTime
+  periodeEinde      DateTime
+  bestandUrl        String?
+  samenvatting      Json?
+  foutmelding       String?
+  aangemaaktOp      DateTime         @default(now())
+  voltooidOp        DateTime?
+
+  gegenereerddoor   Gebruiker        @relation(fields: [gegenereerddoorId], references: [id])
+  emailLogs         EmailLog[]
+
+  @@index([type])
+  @@index([aangemaaktOp])
+  @@map("rapportages")
+}
+
+enum EmailStatus {
+  VERZONDEN
+  MISLUKT
+  OPNIEUW_GEPROBEERD
+}
+
+model EmailLog {
+  id           String      @id @default(uuid())
+  rapportageId String
+  ontvanger    String
+  onderwerp    String
+  status       EmailStatus
+  foutmelding  String?
+  verzondenOp  DateTime    @default(now())
+  providerRef  String?
+
+  rapportage   Rapportage  @relation(fields: [rapportageId], references: [id])
+
+  @@index([rapportageId])
+  @@map("email_logs")
+}
+
+model EmailInstelling {
+  id                String         @id @default(uuid())
+  ontvangerEmail    String         @unique
+  ontvangerNaam     String?
+  maandelijksActief Boolean        @default(true)
+  verzendDag        Int            @default(1)
+  actief            Boolean        @default(true)
+  aangemaaktOp      DateTime       @default(now())
+  bijgewerktOp      DateTime       @updatedAt
+
+  @@map("email_instellingen")
+}
