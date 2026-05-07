@@ -16,11 +16,19 @@ model Gebruiker {
   id           String       @id @default(uuid())
   naam         String
   email        String       @unique
-  wachtwoord   String       // bcrypt hash
-  rol          GebruikerRol @default(MEDEWERKER)
-  actief       Boolean      @default(true)
-  aangemaaktOp DateTime     @default(now())
-  bijgewerktOp DateTime     @updatedAt
+  wachtwoord      String       // bcrypt hash
+  rol             GebruikerRol @default(MEDEWERKER)
+  actief          Boolean      @default(true)
+
+  // 2FA
+  twofaIngesteld  Boolean      @default(false)
+  twofaMethode    String?
+  twofaSecret     String?
+  twofaEmailCode  String?
+  twofaCodeVerval DateTime?
+
+  aangemaaktOp    DateTime     @default(now())
+  bijgewerktOp    DateTime     @updatedAt
   verkopen     Verkoop[]
   mutaties     VoorraadMutatie[]
   rapportages  Rapportage[]

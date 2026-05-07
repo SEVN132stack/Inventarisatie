@@ -7,6 +7,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const body = await req.json()
     const data: Record<string, unknown> = {}
+    if (body.reset2fa) {
+      data.twofaIngesteld  = false
+      data.twofaMethode    = null
+      data.twofaSecret     = null
+      data.twofaEmailCode  = null
+      data.twofaCodeVerval = null
+    }
     if (body.naam)       data.naam   = body.naam
     if (body.rol)        data.rol    = body.rol
     if (body.actief !== undefined) data.actief = body.actief

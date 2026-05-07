@@ -48,6 +48,16 @@ export default function GebruikersBeheer({ gebruikers }: { gebruikers: Gebruiker
     router.refresh()
   }
 
+  async function reset2fa(id: string, naam: string) {
+    if (!confirm(`2FA resetten voor ${naam}? De gebruiker moet 2FA opnieuw instellen bij de volgende login.`)) return
+    await fetch(`/api/beheer/gebruikers/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reset2fa: true }),
+    })
+    router.refresh()
+  }
+
   function openWijzig(id: string) {
     setWijzigId(id)
     setNieuwWachtwoord('')
@@ -125,6 +135,14 @@ export default function GebruikersBeheer({ gebruikers }: { gebruikers: Gebruiker
                       onClick={() => openWijzig(g.id)}
                     >
                       🔑 Wachtwoord
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '3px 10px', fontSize: 11, color: 'var(--amber)' }}
+                      onClick={() => reset2fa(g.id, g.naam)}
+                      title="2FA resetten"
+                    >
+                      🔄 2FA reset
                     </button>
                     <button
                       className="btn btn-ghost"
