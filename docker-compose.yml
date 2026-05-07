@@ -19,31 +19,23 @@ services:
       timeout: 5s
       retries: 5
 
+  # Aparte migrate image — heeft eigen node_modules met alle deps
   migrate:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: migrate.Dockerfile
     container_name: inventarisatie_migrate
-    working_dir: /app
-    volumes:
-      - ./prisma:/app/prisma
-      - ./package.json:/app/package.json
-      - ./package-lock.json:/app/package-lock.json
     environment:
       DATABASE_URL: postgresql://inventarisatie:${DB_PASSWORD:-geheim}@db:5432/inventarisatie?schema=public
-    command: >
-      sh -c "
-        apk add --no-cache openssl libc6-compat &&
-        npm ci --ignore-scripts &&
-        npx prisma generate &&
-        npx prisma db push --accept-data-loss &&
-        node prisma/seed.js
-      "
     depends_on:
       db:
         condition: service_healthy
     restart: "no"
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: inventarisatie_app
     restart: unless-stopped
     ports:
@@ -63,7 +55,7 @@ services:
       db:
         condition: service_healthy
 
-  # Dagelijkse PostgreSQL backup via rsync naar /backups
+  # Dagelijkse PostgreSQL backup naar ./backups/
   backup:
     image: postgres:16-alpine
     container_name: inventarisatie_backup
@@ -81,8 +73,7 @@ services:
           pg_dump -h db -U inventarisatie inventarisatie > $${BESTAND} 2>/dev/null
           if [ -s $${BESTAND} ]; then
             rsync -a $${BESTAND} /backups/
-            echo \"[backup] Backup gemaakt: $${BESTAND}\"
-            # Bewaar max 30 backups
+            echo \"[backup] $$BESTAND aangemaakt\"
             ls -t /backups/*.sql 2>/dev/null | tail -n +31 | xargs rm -f
             rm -f $${BESTAND}
           fi
