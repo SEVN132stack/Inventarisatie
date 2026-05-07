@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from '../../lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 import GebruikersBeheer from './GebruikersBeheer'
 
 export default async function GebruikersPage() {

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from './lib/prisma'
-import { formatEuro, formatDatumKort } from './lib/utils'
-import DashboardCharts from './components/ui/DashboardCharts'
+import { prisma } from '@/app/lib/prisma'
+import { formatEuro, formatDatumKort } from '@/app/lib/utils'
+import DashboardCharts from '@/app/components/ui/DashboardCharts'
 import { unstable_cache } from 'next/cache'
 
 // Cache productencount voor 5 minuten (verandert zelden)

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from '../lib/prisma'
-import { formatEuro, formatDatum } from '../lib/utils'
+import { prisma } from '@/app/lib/prisma'
+import { formatEuro, formatDatum } from '@/app/lib/utils'
 import Link from 'next/link'
 
 export default async function VerkopenPage() {

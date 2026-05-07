@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from '../../lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 import CategorieenBeheer from './CategorieenBeheer'
 export default async function CategorieenPage() {
   const categorieen = await prisma.categorie.findMany({ orderBy: { naam: 'asc' }, include: { _count: { select: { producten: true } } } })

@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from '../../../lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 import { notFound } from 'next/navigation'
 import ProductEditForm from './ProductEditForm'
 

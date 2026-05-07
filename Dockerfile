@@ -4,8 +4,10 @@ FROM node:20-alpine AS base
 FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+# Gebruik package-lock indien aanwezig, anders gewoon npm install
+COPY package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # ── Stap 2: build ─────────────────────────────────────────────────────────────
 FROM base AS builder
@@ -15,11 +17,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Genereer Prisma client (heeft geen echte DB nodig)
 RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
-# Dummy URL + NEXT_PHASE zorgen dat PrismaClient niet initialiseert tijdens build
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 ENV NEXT_PHASE="phase-production-build"
 
@@ -32,7 +32,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-# NEXT_PHASE NIET zetten — dan werkt Prisma normaal op runtime
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nextjs

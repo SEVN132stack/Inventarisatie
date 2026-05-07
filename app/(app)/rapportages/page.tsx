@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from '../lib/prisma'
-import { formatDatum, formatEuro } from '../lib/utils'
+import { prisma } from '@/app/lib/prisma'
+import { formatDatum, formatEuro } from '@/app/lib/utils'
 import RapportageForm from './RapportageForm'
 
 export default async function RapportagesPage() {

@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-import { prisma } from '../../lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 import LeveranciersBeheer from './LeveranciersBeheer'
 export default async function LeveranciersPage() {
   const leveranciers = await prisma.leverancier.findMany({ orderBy: { naam: 'asc' }, include: { _count: { select: { producten: true } } } })
