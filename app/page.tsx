@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { prisma } from './lib/prisma'
 import { formatEuro, formatDatumKort } from './lib/utils'
 import DashboardCharts from './components/ui/DashboardCharts'
