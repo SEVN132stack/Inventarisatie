@@ -33,14 +33,24 @@ async function getDashboardData() {
     ])
 
   // Raw SQL voor omzet per dag — gebruik Prisma-gegenereerde kolomnamen (snake_case)
-  // Prisma converteert camelCase → snake_case: verkochtenOp → verkochten_op, totaalBedrag → totaal_bedrag
-  const verkopenPerDag = await prisma.$queryRaw<{ dag: string; omzet: number }[]>`
-    SELECT DATE(verkochten_op)::text as dag, SUM(totaal_bedrag)::float as omzet
-    FROM verkopen
-    WHERE verkochten_op >= NOW() - INTERVAL '14 days'
-    GROUP BY DATE(verkochten_op)
-    ORDER BY dag ASC
-  `
+  // Haal verkopen op van afgelopen 14 dagen en groepeer in JavaScript
+  // (vermijdt raw SQL kolomnaamproblematiek)
+  const veertiendagenGeleden = new Date(nu)
+  veertiendagenGeleden.setDate(nu.getDate() - 14)
+  const recenteVerkopenRaw = await prisma.verkoop.findMany({
+    where: { verkochtenOp: { gte: veertiendagenGeleden } },
+    select: { verkochtenOp: true, totaalBedrag: true },
+    orderBy: { verkochtenOp: 'asc' },
+  })
+  // Groepeer per dag in JavaScript
+  const dagMap: Record<string, number> = {}
+  for (const v of recenteVerkopenRaw) {
+    const dag = v.verkochtenOp.toISOString().slice(5, 10) // MM-DD
+    dagMap[dag] = (dagMap[dag] ?? 0) + Number(v.totaalBedrag)
+  }
+  const verkopenPerDag = Object.entries(dagMap)
+    .map(([dag, omzet]) => ({ dag, omzet: Math.round(omzet * 100) / 100 }))
+    .sort((a, b) => a.dag.localeCompare(b.dag))
 
   const productIds = topProducten.map(t => t.productId)
   const productenNamen = await prisma.product.findMany({
