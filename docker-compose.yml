@@ -41,7 +41,7 @@ services:
       - "3001:3000"
     environment:
       DATABASE_URL: postgresql://inventarisatie:${DB_PASSWORD:-geheim}@db:5432/inventarisatie?schema=public
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://inventory.zepta-nas.nl}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-winkel-pro-secret-change-in-production}
       BREVO_SMTP_USER: ${BREVO_SMTP_USER:-}
       BREVO_SMTP_KEY: ${BREVO_SMTP_KEY:-}
