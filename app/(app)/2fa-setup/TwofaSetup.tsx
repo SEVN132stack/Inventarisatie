@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 type Stap = 'keuze' | 'totp-qr' | 'totp-verif' | 'email-verif' | 'klaar'
@@ -220,10 +220,14 @@ export default function TwofaSetup() {
         2FA succesvol ingesteld!
       </div>
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
-        Vanaf nu is tweestapsverificatie vereist bij elke login.
+        Log opnieuw in om door te gaan. Vanaf nu is tweestapsverificatie vereist bij elke login.
       </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => router.push('/')}>
-        Naar het dashboard →
+      <button
+        className="btn btn-primary"
+        style={{ width: '100%', justifyContent: 'center' }}
+        onClick={() => signOut({ callbackUrl: '/login' })}
+      >
+        Opnieuw inloggen →
       </button>
     </div>
   )
