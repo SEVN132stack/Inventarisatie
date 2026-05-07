@@ -19,7 +19,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Aparte migrate image — heeft eigen node_modules met alle deps
   migrate:
     build:
       context: .
@@ -39,10 +38,10 @@ services:
     container_name: inventarisatie_app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       DATABASE_URL: postgresql://inventarisatie:${DB_PASSWORD:-geheim}@db:5432/inventarisatie?schema=public
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-winkel-pro-secret-change-in-production}
       BREVO_SMTP_USER: ${BREVO_SMTP_USER:-}
       BREVO_SMTP_KEY: ${BREVO_SMTP_KEY:-}
@@ -55,7 +54,6 @@ services:
       db:
         condition: service_healthy
 
-  # Dagelijkse PostgreSQL backup naar ./backups/
   backup:
     image: postgres:16-alpine
     container_name: inventarisatie_backup
@@ -73,7 +71,6 @@ services:
           pg_dump -h db -U inventarisatie inventarisatie > $${BESTAND} 2>/dev/null
           if [ -s $${BESTAND} ]; then
             rsync -a $${BESTAND} /backups/
-            echo \"[backup] $$BESTAND aangemaakt\"
             ls -t /backups/*.sql 2>/dev/null | tail -n +31 | xargs rm -f
             rm -f $${BESTAND}
           fi
