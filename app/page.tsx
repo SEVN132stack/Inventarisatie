@@ -33,11 +33,12 @@ async function getDashboardData() {
     ])
 
   // Raw SQL voor omzet per dag — gebruik Prisma-gegenereerde kolomnamen (snake_case)
+  // Prisma converteert camelCase → snake_case: verkochtenOp → verkochten_op, totaalBedrag → totaal_bedrag
   const verkopenPerDag = await prisma.$queryRaw<{ dag: string; omzet: number }[]>`
-    SELECT DATE(verkocht_op)::text as dag, SUM(totaal_bedrag)::float as omzet
+    SELECT DATE(verkochten_op)::text as dag, SUM(totaal_bedrag)::float as omzet
     FROM verkopen
-    WHERE verkocht_op >= NOW() - INTERVAL '14 days'
-    GROUP BY DATE(verkocht_op)
+    WHERE verkochten_op >= NOW() - INTERVAL '14 days'
+    GROUP BY DATE(verkochten_op)
     ORDER BY dag ASC
   `
 
