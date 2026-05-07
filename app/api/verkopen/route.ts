@@ -13,6 +13,13 @@ export async function GET() {
   return NextResponse.json(verkopen)
 }
 
+interface VerkoopRegel {
+  productId: string
+  aantal: string | number
+  eenheidsprijs: string | number
+  btw: string | number
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -22,23 +29,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Geen producten opgegeven' }, { status: 400 })
     }
 
-    // Gebruik eerste admin voor nu (in productie: uit session/auth halen)
     const gebruiker = await prisma.gebruiker.findFirst({ where: { rol: 'ADMIN' } })
     if (!gebruiker) return NextResponse.json({ error: 'Geen gebruiker gevonden' }, { status: 400 })
 
-    // Bereken totalen
-    const verrijkteRegels = regels.map((r: any) => ({
+    const verrijkteRegels = regels.map((r: VerkoopRegel) => ({
       ...r,
-      eenheidsprijs: parseFloat(r.eenheidsprijs),
-      btw: parseFloat(r.btw),
-      subtotaal: parseFloat(r.eenheidsprijs) * parseInt(r.aantal),
+      eenheidsprijs: parseFloat(String(r.eenheidsprijs)),
+      btw: parseFloat(String(r.btw)),
+      subtotaal: parseFloat(String(r.eenheidsprijs)) * parseInt(String(r.aantal)),
       korting: 0,
     }))
-    const totaalBedrag = verrijkteRegels.reduce((s: number, r: any) => s + r.subtotaal, 0)
+    const totaalBedrag = verrijkteRegels.reduce((s: number, r: { subtotaal: number }) => s + r.subtotaal, 0)
 
-    // Transactie: verkoop + voorraad update + mutaties
     const verkoop = await prisma.$transaction(async (tx) => {
-      // Maak verkoop aan
       const v = await tx.verkoop.create({
         data: {
           gebruikerId: gebruiker.id,
@@ -46,9 +49,9 @@ export async function POST(req: NextRequest) {
           totaalBedrag,
           notitie: notitie || null,
           regels: {
-            create: verrijkteRegels.map((r: any) => ({
+            create: verrijkteRegels.map((r: VerkoopRegel & { subtotaal: number; korting: number }) => ({
               productId: r.productId,
-              aantal: parseInt(r.aantal),
+              aantal: parseInt(String(r.aantal)),
               eenheidsprijs: r.eenheidsprijs,
               btw: r.btw,
               subtotaal: r.subtotaal,
@@ -58,14 +61,12 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      // Update voorraad per product
       for (const r of verrijkteRegels) {
-        const aantal = parseInt(r.aantal)
+        const aantal = parseInt(String(r.aantal))
         await tx.product.update({
           where: { id: r.productId },
           data: { voorraadAantal: { decrement: aantal } }
         })
-
         await tx.voorraadMutatie.create({
           data: {
             productId: r.productId,
@@ -81,7 +82,8 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(verkoop, { status: 201 })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

@@ -45,7 +45,7 @@ export default async function VerkopenPage() {
             </tr>
           </thead>
           <tbody>
-            {verkopen.map((v) => (
+            {verkopen.map((v: typeof verkopen[number]) => (
               <tr key={v.id}>
                 <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                   {formatDatum(v.verkochtenOp)}

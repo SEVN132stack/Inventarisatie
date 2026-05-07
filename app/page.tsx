@@ -2,6 +2,16 @@ import { prisma } from './lib/prisma'
 import { formatEuro, formatDatumKort } from './lib/utils'
 import DashboardCharts from './components/ui/DashboardCharts'
 
+interface TopProduct {
+  productId: string
+  _sum: { subtotaal: unknown; aantal: unknown }
+}
+
+interface ProductNaam {
+  id: string
+  naam: string
+}
+
 async function getDashboardData() {
   const nu = new Date()
   const beginMaand = new Date(nu.getFullYear(), nu.getMonth(), 1)
@@ -10,14 +20,12 @@ async function getDashboardData() {
 
   const [
     totaalProducten,
-    laagVoorraad,
     verkopenDezeFactuur,
     verkopenVorigeMaand,
     recenteVerkopen,
     topProducten,
   ] = await Promise.all([
     prisma.product.count({ where: { actief: true } }),
-    prisma.product.count({ where: { actief: true, voorraadAantal: { lte: prisma.product.fields.minVoorraad as any } } }),
     prisma.verkoop.aggregate({ where: { verkochtenOp: { gte: beginMaand } }, _sum: { totaalBedrag: true }, _count: true }),
     prisma.verkoop.aggregate({ where: { verkochtenOp: { gte: beginVorigeMaand, lte: eindeVorigeMaand } }, _sum: { totaalBedrag: true }, _count: true }),
     prisma.verkoop.findMany({
@@ -33,7 +41,6 @@ async function getDashboardData() {
     }),
   ])
 
-  // Verkopen per dag (afgelopen 14 dagen)
   const verkopenPerDag = await prisma.$queryRaw<{ dag: string; omzet: number }[]>`
     SELECT DATE(verkocht_op)::text as dag, SUM(totaal_bedrag)::float as omzet
     FROM verkopen
@@ -42,26 +49,24 @@ async function getDashboardData() {
     ORDER BY dag ASC
   `
 
-  // Product namen voor top
-  const productIds = topProducten.map(t => t.productId)
+  const productIds = (topProducten as TopProduct[]).map((t) => t.productId)
   const productenNamen = await prisma.product.findMany({
     where: { id: { in: productIds } },
-    select: { id: true, naam: true, sku: true },
+    select: { id: true, naam: true },
   })
 
-  const topMetNaam = topProducten.map(t => ({
+  const topMetNaam = (topProducten as TopProduct[]).map((t) => ({
     ...t,
-    product: productenNamen.find(p => p.id === t.productId),
+    product: (productenNamen as ProductNaam[]).find((p) => p.id === t.productId),
   }))
 
-  // Producten met lage voorraad
   const laagVoorraadProducten = await prisma.product.findMany({
     where: { actief: true },
     select: { naam: true, sku: true, voorraadAantal: true, minVoorraad: true },
     orderBy: { voorraadAantal: 'asc' },
-    take: 5,
+    take: 10,
   })
-  const echtelaagVoorraad = laagVoorraadProducten.filter(p => p.voorraadAantal <= p.minVoorraad)
+  const echtelaagVoorraad = laagVoorraadProducten.filter((p) => p.voorraadAantal <= p.minVoorraad)
 
   const omzetDezeMaand = Number(verkopenDezeFactuur._sum.totaalBedrag ?? 0)
   const omzetVorig = Number(verkopenVorigeMaand._sum.totaalBedrag ?? 1)
@@ -92,7 +97,6 @@ export default async function Dashboard() {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Dashboard</h1>
         <p style={{ color: 'var(--text-muted)', marginTop: 4, fontSize: 13 }}>
@@ -100,7 +104,6 @@ export default async function Dashboard() {
         </p>
       </div>
 
-      {/* Stats grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         {stats.map((s, i) => (
           <div key={i} className="card" style={{ borderColor: s.alert ? 'var(--amber-dim)' : 'var(--border)' }}>
@@ -120,15 +123,12 @@ export default async function Dashboard() {
         ))}
       </div>
 
-      {/* Charts + sidebar */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, marginBottom: 20 }}>
-        {/* Omzet chart */}
         <div className="card">
           <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', marginBottom: 16 }}>Omzet afgelopen 14 dagen</div>
           <DashboardCharts verkopenPerDag={data.verkopenPerDag} />
         </div>
 
-        {/* Lage voorraad alerts */}
         <div className="card">
           <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', marginBottom: 16 }}>Lage voorraad</div>
           {data.laagVoorraadProducten.length === 0 ? (
@@ -152,9 +152,7 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      {/* Recent + Top producten */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        {/* Recente verkopen */}
         <div className="card" style={{ padding: 0 }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)' }}>Recente verkopen</div>
@@ -179,7 +177,6 @@ export default async function Dashboard() {
           </table>
         </div>
 
-        {/* Top producten */}
         <div className="card" style={{ padding: 0 }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)' }}>Top producten (omzet)</div>
@@ -196,8 +193,8 @@ export default async function Dashboard() {
               {data.topMetNaam.map((t, i) => (
                 <tr key={i}>
                   <td style={{ fontSize: 12 }}>{t.product?.naam ?? '–'}</td>
-                  <td style={{ textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--text-muted)' }}>{t._sum.aantal}</td>
-                  <td style={{ textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: 12 }}>{formatEuro(t._sum.subtotaal ?? 0)}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--text-muted)' }}>{String(t._sum.aantal ?? 0)}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'DM Mono, monospace', fontSize: 12 }}>{formatEuro(Number(t._sum.subtotaal ?? 0))}</td>
                 </tr>
               ))}
             </tbody>

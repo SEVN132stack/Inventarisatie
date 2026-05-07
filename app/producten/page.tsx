@@ -35,7 +35,7 @@ export default async function ProductenPage() {
             </tr>
           </thead>
           <tbody>
-            {producten.map((p) => {
+            {producten.map((p: typeof producten[number]) => {
               const laag = p.voorraadAantal <= p.minVoorraad
               const marge = ((Number(p.verkoopprijs) - Number(p.inkoopprijs)) / Number(p.verkoopprijs) * 100).toFixed(0)
               return (
