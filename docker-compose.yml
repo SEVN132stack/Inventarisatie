@@ -1,7 +1,6 @@
 version: '3.9'
 
 services:
-  # PostgreSQL database
   db:
     image: postgres:16-alpine
     container_name: inventarisatie_db
@@ -20,7 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Migraties + seed — lichtgewicht, bouwt de Next.js app NIET
+  # Maakt tabellen aan via db push (geen migratiebestanden nodig) + seed
   migrate:
     image: node:20-alpine
     container_name: inventarisatie_migrate
@@ -36,7 +35,7 @@ services:
         apk add --no-cache openssl libc6-compat &&
         npm ci --ignore-scripts &&
         npx prisma generate &&
-        npx prisma migrate deploy &&
+        npx prisma db push --accept-data-loss &&
         node prisma/seed.js
       "
     depends_on:
@@ -44,7 +43,6 @@ services:
         condition: service_healthy
     restart: "no"
 
-  # Next.js applicatie
   app:
     build: .
     container_name: inventarisatie_app
@@ -63,7 +61,6 @@ services:
       db:
         condition: service_healthy
 
-  # Cron: stuur maandelijks rapport op de 1e van de maand om 08:00
   cron:
     image: curlimages/curl:latest
     container_name: inventarisatie_cron
