@@ -20,13 +20,25 @@ services:
       timeout: 5s
       retries: 5
 
-  # Databasemigraties + seed (eenmalig bij opstarten)
+  # Migraties + seed — lichtgewicht, bouwt de Next.js app NIET
   migrate:
-    build: .
+    image: node:20-alpine
     container_name: inventarisatie_migrate
+    working_dir: /app
+    volumes:
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
     environment:
       DATABASE_URL: postgresql://inventarisatie:geheim@db:5432/inventarisatie?schema=public
-    command: sh -c "npx prisma migrate deploy && node prisma/seed.js"
+    command: >
+      sh -c "
+        apk add --no-cache openssl libc6-compat &&
+        npm ci --ignore-scripts &&
+        npx prisma generate &&
+        npx prisma migrate deploy &&
+        node prisma/seed.js
+      "
     depends_on:
       db:
         condition: service_healthy
@@ -51,22 +63,26 @@ services:
       db:
         condition: service_healthy
 
-  # Cron: stuur maandelijks rapport op de 1e van de maand
+  # Cron: stuur maandelijks rapport op de 1e van de maand om 08:00
   cron:
-    image: alpine:3.19
+    image: curlimages/curl:latest
     container_name: inventarisatie_cron
     restart: unless-stopped
-    environment:
-      APP_URL: http://app:3000
-    command: >
-      sh -c "
-        echo '0 8 1 * * wget -qO- --header=\"Content-Type: application/json\"
-          --post-data={\"type\":\"MAANDELIJKS\",\"stuurMail\":true}
-          \$${APP_URL}/api/rapportages > /dev/null 2>&1' | crontab - &&
-        crond -f -l 2
-      "
     depends_on:
       - app
+    entrypoint: >
+      sh -c "
+        while true; do
+          HOUR=$(date +%H)
+          DAY=$(date +%d)
+          if [ \"$$DAY\" = '01' ] && [ \"$$HOUR\" = '08' ]; then
+            curl -s -X POST http://app:3000/api/rapportages \
+              -H 'Content-Type: application/json' \
+              -d '{\"type\":\"MAANDELIJKS\",\"stuurMail\":true}' || true
+          fi
+          sleep 3600
+        done
+      "
 
 volumes:
   postgres_data:
