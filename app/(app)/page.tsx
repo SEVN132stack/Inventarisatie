@@ -75,12 +75,16 @@ async function getLiveData() {
     }),
     prisma.verkoopRegel.findMany({
       where: { verkoop: { verkochtenOp: { gte: beginMaand } } },
-      include: { product: { include: { categorie: { select: { naam: true } } } } },
       select: {
         subtotaal: true,
         eenheidsprijs: true,
         aantal: true,
-        product: { select: { inkoopprijs: true, categorie: { select: { naam: true } } } }
+        product: {
+          select: {
+            inkoopprijs: true,
+            categorie: { select: { naam: true } },
+          },
+        },
       },
     }),
   ])
