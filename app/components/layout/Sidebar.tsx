@@ -52,7 +52,7 @@ export default function Sidebar() {
       <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)' }}>
         <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 2 }}>{session?.user?.name ?? 'Gebruiker'}</div>
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>{session?.user?.email}</div>
-        <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', fontSize: 11, padding: '5px 0' }} onClick={() => signOut({ callbackUrl: '/login' })}>
+        <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', fontSize: 11, padding: '5px 0' }} onClick={() => signOut({ callbackUrl: window.location.origin + '/login' })}>
           Uitloggen
         </button>
       </div>

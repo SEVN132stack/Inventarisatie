@@ -45,6 +45,7 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-winkel-pro-secret-change-in-production}
       BREVO_SMTP_USER: ${BREVO_SMTP_USER:-}
       BREVO_SMTP_KEY: ${BREVO_SMTP_KEY:-}
+      BREVO_SMTP_PORT: ${BREVO_SMTP_PORT:-587}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@winkel.nl}
       EMAIL_NAAM: ${EMAIL_NAAM:-WinkelPro}
       NODE_ENV: production

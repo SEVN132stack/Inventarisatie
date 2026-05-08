@@ -225,7 +225,7 @@ export default function TwofaSetup() {
       <button
         className="btn btn-primary"
         style={{ width: '100%', justifyContent: 'center' }}
-        onClick={() => signOut({ callbackUrl: '/login' })}
+        onClick={() => signOut({ callbackUrl: window.location.origin + '/login' })}
       >
         Opnieuw inloggen →
       </button>
