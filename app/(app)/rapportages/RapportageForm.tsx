@@ -20,10 +20,50 @@ export default function RapportageForm({ emailInstellingen }: Props) {
   const [stuurMail, setStuurMail] = useState(true)
 
   const now = new Date()
-  const defaultStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10)
-  const defaultEinde = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10)
-  const [start, setStart] = useState(defaultStart)
-  const [einde, setEinde] = useState(defaultEinde)
+
+  // Bereken periode op basis van type
+  function berekenPeriode(type: string): { start: string; einde: string } {
+    const j = now.getFullYear()
+    const m = now.getMonth() // 0-11
+
+    if (type === 'MAANDELIJKS') {
+      // Vorige maand: 1e t/m laatste dag
+      const start = new Date(j, m - 1, 1)
+      const einde = new Date(j, m, 0)
+      return { start: start.toISOString().slice(0, 10), einde: einde.toISOString().slice(0, 10) }
+    }
+
+    if (type === 'KWARTAAL') {
+      // Huidig kwartaal: 1 = jan-mrt, 2 = apr-jun, 3 = jul-sep, 4 = okt-dec
+      // Kijk naar het vorige kwartaal
+      const huidigKwartaal = Math.floor(m / 3) // 0-3
+      const vorigKwartaal  = huidigKwartaal === 0 ? 3 : huidigKwartaal - 1
+      const kwartaalJaar   = huidigKwartaal === 0 ? j - 1 : j
+      const startMaand     = vorigKwartaal * 3       // 0, 3, 6 of 9
+      const eindeMaand     = startMaand + 2          // 2, 5, 8 of 11
+      const start = new Date(kwartaalJaar, startMaand, 1)
+      const einde = new Date(kwartaalJaar, eindeMaand + 1, 0)
+      return { start: start.toISOString().slice(0, 10), einde: einde.toISOString().slice(0, 10) }
+    }
+
+    if (type === 'JAARLIJKS') {
+      // Vorig jaar: 1 jan t/m 31 dec
+      const vorigJaar = j - 1
+      return {
+        start: `${vorigJaar}-01-01`,
+        einde: `${vorigJaar}-12-31`,
+      }
+    }
+
+    // HANDMATIG: huidige maand als standaard
+    const start = new Date(j, m, 1)
+    const einde = new Date(j, m + 1, 0)
+    return { start: start.toISOString().slice(0, 10), einde: einde.toISOString().slice(0, 10) }
+  }
+
+  const initPeriode = berekenPeriode('MAANDELIJKS')
+  const [start, setStart] = useState(initPeriode.start)
+  const [einde, setEinde] = useState(initPeriode.einde)
 
   const actieveOntvangers = emailInstellingen.filter(e => e.actief).length
 
@@ -76,7 +116,15 @@ export default function RapportageForm({ emailInstellingen }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <label className="field-label">Type</label>
-            <select className="input" value={type} onChange={e => setType(e.target.value)}>
+            <select className="input" value={type} onChange={e => {
+              const nieuwType = e.target.value
+              setType(nieuwType)
+              if (nieuwType !== 'HANDMATIG') {
+                const periode = berekenPeriode(nieuwType)
+                setStart(periode.start)
+                setEinde(periode.einde)
+              }
+            }}>
               <option value="MAANDELIJKS">Maandelijks</option>
               <option value="KWARTAAL">Kwartaal</option>
               <option value="JAARLIJKS">Jaarlijks</option>
