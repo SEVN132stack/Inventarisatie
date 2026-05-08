@@ -49,6 +49,7 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-noreply@winkel.nl}
       EMAIL_NAAM: ${EMAIL_NAAM:-WinkelPro}
       NODE_ENV: production
+      TEST_MAIL_ENABLED: ${TEST_MAIL_ENABLED:-false}
     depends_on:
       migrate:
         condition: service_completed_successfully
