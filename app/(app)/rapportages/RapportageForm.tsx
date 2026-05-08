@@ -21,44 +21,47 @@ export default function RapportageForm({ emailInstellingen }: Props) {
 
   const now = new Date()
 
+  // Formatteer datum lokaal als YYYY-MM-DD (voorkomt UTC timezone shift)
+  function datumNaarString(d: Date): string {
+    const j = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const dag = String(d.getDate()).padStart(2, '0')
+    return `${j}-${m}-${dag}`
+  }
+
   // Bereken periode op basis van type
   function berekenPeriode(type: string): { start: string; einde: string } {
     const j = now.getFullYear()
-    const m = now.getMonth() // 0-11
+    const m = now.getMonth() // 0-11 (0=jan, 4=mei)
 
     if (type === 'MAANDELIJKS') {
       // Vorige maand: 1e t/m laatste dag
       const start = new Date(j, m - 1, 1)
-      const einde = new Date(j, m, 0)
-      return { start: start.toISOString().slice(0, 10), einde: einde.toISOString().slice(0, 10) }
+      const einde = new Date(j, m, 0) // dag 0 van huidige maand = laatste dag vorige maand
+      return { start: datumNaarString(start), einde: datumNaarString(einde) }
     }
 
     if (type === 'KWARTAAL') {
-      // Huidig kwartaal: 1 = jan-mrt, 2 = apr-jun, 3 = jul-sep, 4 = okt-dec
-      // Kijk naar het vorige kwartaal
-      const huidigKwartaal = Math.floor(m / 3) // 0-3
+      // Vorig kwartaal
+      const huidigKwartaal = Math.floor(m / 3) // 0=Q1, 1=Q2, 2=Q3, 3=Q4
       const vorigKwartaal  = huidigKwartaal === 0 ? 3 : huidigKwartaal - 1
       const kwartaalJaar   = huidigKwartaal === 0 ? j - 1 : j
-      const startMaand     = vorigKwartaal * 3       // 0, 3, 6 of 9
-      const eindeMaand     = startMaand + 2          // 2, 5, 8 of 11
+      const startMaand     = vorigKwartaal * 3  // 0, 3, 6 of 9
+      const eindeMaand     = startMaand + 2     // 2, 5, 8 of 11
       const start = new Date(kwartaalJaar, startMaand, 1)
       const einde = new Date(kwartaalJaar, eindeMaand + 1, 0)
-      return { start: start.toISOString().slice(0, 10), einde: einde.toISOString().slice(0, 10) }
+      return { start: datumNaarString(start), einde: datumNaarString(einde) }
     }
 
     if (type === 'JAARLIJKS') {
-      // Vorig jaar: 1 jan t/m 31 dec
-      const vorigJaar = j - 1
-      return {
-        start: `${vorigJaar}-01-01`,
-        einde: `${vorigJaar}-12-31`,
-      }
+      // Vorig jaar
+      return { start: `${j - 1}-01-01`, einde: `${j - 1}-12-31` }
     }
 
-    // HANDMATIG: huidige maand als standaard
+    // HANDMATIG: huidige maand
     const start = new Date(j, m, 1)
     const einde = new Date(j, m + 1, 0)
-    return { start: start.toISOString().slice(0, 10), einde: einde.toISOString().slice(0, 10) }
+    return { start: datumNaarString(start), einde: datumNaarString(einde) }
   }
 
   const initPeriode = berekenPeriode('MAANDELIJKS')
